@@ -21,9 +21,11 @@ An interactive social deduction experience built with Next.js 15. Players join a
 	 ```
 2. Copy `.env.local` (or create one) and provide project-specific values:
 	 ```bash
-	 NEXT_PUBLIC_SUPABASE_URL=...           # Supabase project URL
-	 NEXT_PUBLIC_SUPABASE_ANON_KEY=...      # Public anon key
-	 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=... # Same as anon or custom JWT
+		NEXT_PUBLIC_SUPABASE_URL=...              # Supabase project URL
+		NEXT_PUBLIC_SUPABASE_ANON_KEY=...         # Public anon key
+		NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...  # Same as anon or custom JWT
+		NEXT_PUBLIC_SOCKET_URL=...                # Socket.IO relay URL (omit to default to localhost)
+		SOCKET_ALLOWED_ORIGINS=...                # Comma-separated origins the relay should trust
 	 ```
 	 Keep keys secret; never commit real credentials.
 3. Apply the database schema in Supabase using `src/app/database.sql`. Run the file once to create tables, relationships, and helper functions referenced by the app.
@@ -34,6 +36,7 @@ An interactive social deduction experience built with Next.js 15. Players join a
 	npm run dev
 	```
 	This spawns the Next.js dev server (`npm run dev:next`) and the Socket.IO bridge (`npm run dev:ws`).
+	The relay defaults to port 3001; override with `SOCKET_PORT` and supply trusted origins via `SOCKET_ALLOWED_ORIGINS` when running in other environments.
 - Build for production:
 	```bash
 	npm run build
@@ -57,6 +60,17 @@ An interactive social deduction experience built with Next.js 15. Players join a
 ## Deployment Notes
 - Provide the same environment variables at build and runtime (Vercel or other hosting providers).
 - Ensure the WebSocket server runs alongside the Next.js deployment if real-time updates are required in production. The simple `server.js` can be adapted to your hosting platform or merged into a managed WebSocket solution.
+
+## Fly.io Socket Deployment
+- Install the Fly CLI (`fly auth signup` or `fly auth login`) and run `fly launch` from the repo root. Pick a unique app name (update `app = "trust-gambit-socket"` in `fly.toml` to match) and decline the immediate deploy so you can review settings.
+- Edit `fly.toml` to set your preferred `primary_region`, ensure `internal_port = 3001`, and add any extra domains to `SOCKET_ALLOWED_ORIGINS`.
+- Deploy the relay:
+	```bash
+	fly secrets set SOCKET_ALLOWED_ORIGINS="https://the-trust-gambit-app.vercel.app"
+	fly deploy
+	```
+	Fly exposes a URL such as `https://trust-gambit-socket.fly.dev` once deployment finishes.
+- In Vercel, create `NEXT_PUBLIC_SOCKET_URL` pointing at the Fly URL and redeploy the Next.js frontend so clients connect to the hosted relay.
 
 ## Troubleshooting
 - **Auth issues**: Verify Supabase URL and keys. Check that the browser receives a valid session and that server-side requests include the cookies.

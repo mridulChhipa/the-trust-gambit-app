@@ -1,14 +1,28 @@
 // server.js
 const { Server } = require("socket.io");
 
-const io = new Server(3001, {
-    cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"],
-    },
+const PORT = Number(process.env.PORT || process.env.SOCKET_PORT || 3001);
+const allowedOriginsEnv = process.env.SOCKET_ALLOWED_ORIGINS || "http://localhost:3000";
+const allowedOrigins = allowedOriginsEnv
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const corsOrigin = allowedOrigins.length > 0 ? allowedOrigins : "*";
+const corsConfig = {
+    origin: corsOrigin,
+    methods: ["GET", "POST"],
+};
+
+if (corsOrigin !== "*") {
+    corsConfig.credentials = true;
+}
+
+const io = new Server(PORT, {
+    cors: corsConfig,
 });
 
-console.log("🚀 Real-time server started on port 3001");
+console.log(`🚀 Real-time server started on port ${PORT}`);
 
 io.on("connection", (socket) => {
     console.log(`✅ User connected: ${socket.id}`);
